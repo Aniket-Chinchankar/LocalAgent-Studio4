@@ -183,7 +183,8 @@ export const Route = createFileRoute("/api/chat")({
 // ----- Long-term memory extraction -----
 async function extractAndStoreMemory(opts: {
   apiKey: string;
-  supabase: ReturnType<typeof createClient>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any;
   userId: string;
   conversationId: string;
   userText: string;
