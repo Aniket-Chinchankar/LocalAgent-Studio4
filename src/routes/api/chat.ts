@@ -148,9 +148,9 @@ export const Route = createFileRoute("/api/chat")({
             model,
             messages: body.messages,
             lastUserText: lastText,
+            ragContext,
             ctx: { supabase, userId, conversationId: body.conversationId },
           });
-          // Wrap onFinish for orchestrator path
           const streamResponse = result.toUIMessageStreamResponse({
             originalMessages: body.messages,
           });
@@ -165,7 +165,7 @@ export const Route = createFileRoute("/api/chat")({
 
         const result = streamText({
           model: gateway(model),
-          system: agent.systemPrompt,
+          system: agent.systemPrompt + ragContext,
           messages: await convertToModelMessages(body.messages),
           onFinish: async ({ text, usage }) => {
             await onAssistantFinish(text, usage, agentId);
@@ -179,3 +179,48 @@ export const Route = createFileRoute("/api/chat")({
     },
   },
 });
+
+// ----- Long-term memory extraction -----
+async function extractAndStoreMemory(opts: {
+  apiKey: string;
+  supabase: ReturnType<typeof createClient>;
+  userId: string;
+  conversationId: string;
+  userText: string;
+  assistantText: string;
+}) {
+  const { generateText, Output } = await import("ai");
+  const { z } = await import("zod");
+  const { createLovableAiGatewayProvider, DEFAULT_MODEL } = await import("@/lib/ai-gateway");
+  const { embedTexts } = await import("@/lib/embeddings.server");
+
+  const gateway = createLovableAiGatewayProvider(opts.apiKey);
+  const { output } = await generateText({
+    model: gateway(DEFAULT_MODEL),
+    output: Output.object({
+      schema: z.object({
+        facts: z
+          .array(z.string().min(8).max(280))
+          .max(5)
+          .describe("Durable facts about the user, their preferences, projects, or decisions worth remembering long-term. Skip trivia and chit-chat."),
+      }),
+    }),
+    prompt:
+      `Extract up to 5 durable, user-specific facts from this exchange. ` +
+      `Return an empty list if nothing notable.\n\n` +
+      `USER: ${opts.userText}\n\nASSISTANT: ${opts.assistantText.slice(0, 2000)}`,
+  });
+  const facts = output.facts ?? [];
+  if (facts.length === 0) return;
+  const vectors = await embedTexts(opts.apiKey, facts);
+  await Promise.all(
+    facts.map((content, i) =>
+      opts.supabase.rpc("add_memory", {
+        p_content: content,
+        p_embedding: vectors[i] as unknown as string,
+        p_conversation_id: opts.conversationId,
+        p_metadata: { source: "auto-extracted" },
+      }),
+    ),
+  );
+}
