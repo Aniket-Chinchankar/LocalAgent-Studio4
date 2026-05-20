@@ -20,7 +20,7 @@ function ChatPage() {
   const qc = useQueryClient();
   const fetchConv = useServerFn(getConversation);
   const rename = useServerFn(renameConversation);
-  const [agent, setAgent] = useState<AgentId>("default");
+  const [agent, setAgent] = useState<AgentId>("orchestrator");
 
   const { data } = useQuery({
     queryKey: ["conversation", conversationId],
