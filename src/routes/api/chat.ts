@@ -63,9 +63,50 @@ export const Route = createFileRoute("/api/chat")({
           });
         }
 
+        // ---- RAG: retrieve relevant chunks + memory ----
+        let ragContext = "";
+        if (lastText && lastText.length >= 4) {
+          try {
+            const { embedOne } = await import("@/lib/embeddings.server");
+            const vec = await embedOne(LOVABLE_API_KEY, lastText);
+            const [chunks, memory] = await Promise.all([
+              supabase.rpc("match_chunks", {
+                query_embedding: vec as unknown as string,
+                match_count: 4,
+                p_user_id: userId,
+              }),
+              supabase.rpc("match_memory", {
+                query_embedding: vec as unknown as string,
+                match_count: 3,
+                p_user_id: userId,
+              }),
+            ]);
+            const docParts = (chunks.data ?? [])
+              .filter((c: { similarity: number }) => c.similarity > 0.35)
+              .map((c: { content: string; similarity: number }, i: number) =>
+                `[Doc#${i + 1} sim=${c.similarity.toFixed(2)}] ${c.content}`,
+              );
+            const memParts = (memory.data ?? [])
+              .filter((m: { similarity: number }) => m.similarity > 0.4)
+              .map((m: { content: string }, i: number) => `[Mem#${i + 1}] ${m.content}`);
+            const all = [...docParts, ...memParts];
+            if (all.length > 0) {
+              ragContext =
+                `\n\nRelevant context retrieved from the user's documents and long-term memory. ` +
+                `Cite as [Doc#n] / [Mem#n] when used.\n\n${all.join("\n\n")}`;
+            }
+          } catch (e) {
+            console.error("[rag] retrieval failed", e);
+          }
+        }
+
         const gateway = createLovableAiGatewayProvider(LOVABLE_API_KEY);
 
-        const onAssistantFinish = async (text: string, usage: { inputTokens?: number; outputTokens?: number } | undefined, finalAgent: AgentId) => {
+        const onAssistantFinish = async (
+          text: string,
+          usage: { inputTokens?: number; outputTokens?: number } | undefined,
+          finalAgent: AgentId,
+        ) => {
           if (!body.conversationId) return;
           await supabase.from("messages").insert({
             conversation_id: body.conversationId,
@@ -86,6 +127,18 @@ export const Route = createFileRoute("/api/chat")({
             .from("conversations")
             .update({ updated_at: new Date().toISOString() })
             .eq("id", body.conversationId);
+
+          // Long-term memory extraction (best-effort, async)
+          if (lastText && text && body.conversationId) {
+            extractAndStoreMemory({
+              apiKey: LOVABLE_API_KEY,
+              supabase,
+              userId,
+              conversationId: body.conversationId,
+              userText: lastText,
+              assistantText: text,
+            }).catch((e) => console.error("[memory] extract failed", e));
+          }
         };
 
         if (agentId === "orchestrator") {
