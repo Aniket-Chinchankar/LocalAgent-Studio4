@@ -52,8 +52,9 @@ export async function runOrchestrator(opts: {
   messages: UIMessage[];
   ctx: LogCtx;
   lastUserText: string;
+  ragContext?: string;
 }) {
-  const { apiKey, model, messages, ctx, lastUserText } = opts;
+  const { apiKey, model, messages, ctx, lastUserText, ragContext = "" } = opts;
   const gateway = createLovableAiGatewayProvider(apiKey);
   const plannerStart = Date.now();
   const plannerRunId = await logRun(ctx, "planner", "running", {
