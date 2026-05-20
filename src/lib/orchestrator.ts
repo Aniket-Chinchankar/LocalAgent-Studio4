@@ -98,7 +98,8 @@ export async function runOrchestrator(opts: {
     system:
       specialist.systemPrompt +
       `\n\nYou were selected by the orchestrator because: ${plan.reasoning}. ` +
-      `Respond directly to the user in markdown.`,
+      `Respond directly to the user in markdown.` +
+      ragContext,
     messages: await convertToModelMessages(messages),
     onFinish: async ({ text, usage }) => {
       await logRun(ctx, plan.specialist, "completed", {
