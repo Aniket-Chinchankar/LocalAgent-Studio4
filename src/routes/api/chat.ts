@@ -98,14 +98,15 @@ export const Route = createFileRoute("/api/chat")({
             ctx: { supabase, userId, conversationId: body.conversationId },
           });
           // Wrap onFinish for orchestrator path
-          const orig = result;
-          const streamResponse = orig.toUIMessageStreamResponse({
+          const streamResponse = result.toUIMessageStreamResponse({
             originalMessages: body.messages,
           });
-          // Persist when stream finishes via the result's onFinish (set inside orchestrator? no — we need it here for assistant msg)
-          orig.text.then((text) =>
-            orig.usage.then((usage) => onAssistantFinish(text, usage, plan.specialist)),
-          ).catch(() => {});
+          (async () => {
+            try {
+              const [text, usage] = await Promise.all([result.text, result.usage]);
+              await onAssistantFinish(text, usage, plan.specialist);
+            } catch {}
+          })();
           return streamResponse;
         }
 
