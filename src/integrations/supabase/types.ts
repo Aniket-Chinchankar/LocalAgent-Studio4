@@ -334,6 +334,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_memory: {
+        Args: {
+          p_content: string
+          p_conversation_id?: string
+          p_embedding: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
       match_chunks: {
         Args: {
           match_count?: number
