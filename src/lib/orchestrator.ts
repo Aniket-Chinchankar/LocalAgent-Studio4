@@ -52,8 +52,9 @@ export async function runOrchestrator(opts: {
   messages: UIMessage[];
   ctx: LogCtx;
   lastUserText: string;
+  ragContext?: string;
 }) {
-  const { apiKey, model, messages, ctx, lastUserText } = opts;
+  const { apiKey, model, messages, ctx, lastUserText, ragContext = "" } = opts;
   const gateway = createLovableAiGatewayProvider(apiKey);
   const plannerStart = Date.now();
   const plannerRunId = await logRun(ctx, "planner", "running", {
@@ -97,7 +98,8 @@ export async function runOrchestrator(opts: {
     system:
       specialist.systemPrompt +
       `\n\nYou were selected by the orchestrator because: ${plan.reasoning}. ` +
-      `Respond directly to the user in markdown.`,
+      `Respond directly to the user in markdown.` +
+      ragContext,
     messages: await convertToModelMessages(messages),
     onFinish: async ({ text, usage }) => {
       await logRun(ctx, plan.specialist, "completed", {
