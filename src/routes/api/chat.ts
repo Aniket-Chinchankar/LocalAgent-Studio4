@@ -64,32 +64,57 @@ export const Route = createFileRoute("/api/chat")({
         }
 
         const gateway = createLovableAiGatewayProvider(LOVABLE_API_KEY);
+
+        const onAssistantFinish = async (text: string, usage: { inputTokens?: number; outputTokens?: number } | undefined, finalAgent: AgentId) => {
+          if (!body.conversationId) return;
+          await supabase.from("messages").insert({
+            conversation_id: body.conversationId,
+            user_id: userId,
+            role: "assistant",
+            content: text,
+            agent: finalAgent,
+            tokens_in: usage?.inputTokens ?? null,
+            tokens_out: usage?.outputTokens ?? null,
+          });
+          await supabase.from("token_usage").insert({
+            user_id: userId,
+            model,
+            tokens_in: usage?.inputTokens ?? 0,
+            tokens_out: usage?.outputTokens ?? 0,
+          });
+          await supabase
+            .from("conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", body.conversationId);
+        };
+
+        if (agentId === "orchestrator") {
+          const { runOrchestrator } = await import("@/lib/orchestrator");
+          const { result, plan } = await runOrchestrator({
+            apiKey: LOVABLE_API_KEY,
+            model,
+            messages: body.messages,
+            lastUserText: lastText,
+            ctx: { supabase, userId, conversationId: body.conversationId },
+          });
+          // Wrap onFinish for orchestrator path
+          const orig = result;
+          const streamResponse = orig.toUIMessageStreamResponse({
+            originalMessages: body.messages,
+          });
+          // Persist when stream finishes via the result's onFinish (set inside orchestrator? no — we need it here for assistant msg)
+          orig.text.then((text) =>
+            orig.usage.then((usage) => onAssistantFinish(text, usage, plan.specialist)),
+          ).catch(() => {});
+          return streamResponse;
+        }
+
         const result = streamText({
           model: gateway(model),
           system: agent.systemPrompt,
           messages: await convertToModelMessages(body.messages),
           onFinish: async ({ text, usage }) => {
-            if (body.conversationId) {
-              await supabase.from("messages").insert({
-                conversation_id: body.conversationId,
-                user_id: userId,
-                role: "assistant",
-                content: text,
-                agent: agentId,
-                tokens_in: usage?.inputTokens ?? null,
-                tokens_out: usage?.outputTokens ?? null,
-              });
-              await supabase.from("token_usage").insert({
-                user_id: userId,
-                model,
-                tokens_in: usage?.inputTokens ?? 0,
-                tokens_out: usage?.outputTokens ?? 0,
-              });
-              await supabase
-                .from("conversations")
-                .update({ updated_at: new Date().toISOString() })
-                .eq("id", body.conversationId);
-            }
+            await onAssistantFinish(text, usage, agentId);
           },
         });
 
