@@ -1,6 +1,7 @@
 // Agent registry. M1 ships the Default agent; M2 wires the orchestrator.
 export type AgentId =
   | "default"
+  | "orchestrator"
   | "research"
   | "planner"
   | "coding"
