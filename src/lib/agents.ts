@@ -23,6 +23,13 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     systemPrompt:
       "You are a helpful, accurate AI research assistant. Use markdown for formatting. Use fenced code blocks with language tags for code. Cite sources when you reference external facts.",
   },
+  orchestrator: {
+    id: "orchestrator",
+    name: "Orchestrator",
+    description: "Routes your query through a planner → specialist → reviewer pipeline.",
+    systemPrompt:
+      "You are the orchestrator. Delegate to the right specialist agent and return a final synthesized answer.",
+  },
   research: {
     id: "research",
     name: "Research Agent",
