@@ -11,6 +11,7 @@ import {
   LogOut,
   Sparkles,
   Trash2,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -35,6 +36,7 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Chat", url: "/chat", icon: MessageSquare },
+  { title: "Chatbot", url: "/chatbot", icon: Bot },
   { title: "Memory", url: "/memory", icon: Database },
   { title: "Agents", url: "/agents", icon: Activity },
   { title: "Settings", url: "/settings", icon: Settings },
