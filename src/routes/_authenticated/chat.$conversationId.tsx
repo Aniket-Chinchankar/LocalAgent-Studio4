@@ -169,7 +169,6 @@ function ChatPage() {
               const responseStream = await puter.ai.chat(mappedMessages, {
                 model: puterModel,
                 stream: true,
-                tools: [{ type: "web_search" }],
               });
 
               let fullAssistantText = "";
