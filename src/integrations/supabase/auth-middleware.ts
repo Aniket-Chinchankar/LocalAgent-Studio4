@@ -11,36 +11,27 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     }
 
     const authHeader = request.headers.get("authorization");
-
-    if (!authHeader) {
-      throw new Error("Unauthorized: No authorization header provided");
-    }
-
-    if (!authHeader.startsWith("Bearer ")) {
-      throw new Error("Unauthorized: Only Bearer tokens are supported");
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) {
-      throw new Error("Unauthorized: No token provided");
+    let token = "";
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.replace("Bearer ", "");
     }
 
     const supabase = createMockSupabaseClient();
-    let userId = "";
-    let email = "";
-    let displayName = "";
+    let userId = "00000000-0000-0000-0000-000000000000";
+    let email = "guest@agentflow.ai";
+    let displayName = "Guest";
 
-    if (token === "mock-guest-token") {
-      userId = "00000000-0000-0000-0000-000000000000";
-      email = "guest@agentflow.ai";
-      displayName = "Guest";
-    } else if (token.startsWith("local-token:")) {
-      const parts = token.split(":");
-      userId = parts[1];
-      email = parts[2];
-      displayName = parts[3];
-    } else {
-      throw new Error("Unauthorized: Invalid token");
+    if (token && token.startsWith("local-token:")) {
+      try {
+        const parts = token.split(":");
+        userId = parts[1];
+        email = parts[2];
+        displayName = parts[3];
+      } catch (err) {
+        console.warn("[auth-middleware] Failed to parse local token, falling back to guest:", err);
+      }
+    } else if (token && token !== "mock-guest-token") {
+      console.warn("[auth-middleware] Unrecognized or invalid token, falling back to guest.");
     }
 
     const mockClaims = {
