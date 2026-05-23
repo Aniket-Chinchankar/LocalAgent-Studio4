@@ -54,8 +54,9 @@ export async function runOrchestrator(opts: {
   ctx: LogCtx;
   lastUserText: string;
   ragContext?: string;
+  webSearchContext?: string;
 }) {
-  const { apiKey, model, messages, ctx, lastUserText, ragContext = "" } = opts;
+  const { apiKey, model, messages, ctx, lastUserText, ragContext = "", webSearchContext = "" } = opts;
   const gateway = getAiProvider(apiKey);
   const mappedModel = mapModelName(model, apiKey);
   const plannerStart = Date.now();
@@ -78,7 +79,8 @@ export async function runOrchestrator(opts: {
         `- memory: extract durable facts to remember\n\n` +
         `Available tools: web_search, web_scrape, document_retrieval.\n\n` +
         `Set needsReview=true for code or critical decisions.\n\n` +
-        `User query:\n"""${lastUserText}"""`,
+        `User query:\n"""${lastUserText}"""` +
+        (webSearchContext ? `\n\n[Real-Time Internet Search Results]\n${webSearchContext}` : ""),
     });
     plan = output;
   } catch (e) {
@@ -108,7 +110,8 @@ export async function runOrchestrator(opts: {
       specialist.systemPrompt +
       `\n\nYou were selected by the orchestrator because: ${plan.reasoning}. ` +
       `Respond directly to the user in markdown.` +
-      ragContext,
+      ragContext +
+      (webSearchContext ? `\n\n[Real-Time Internet Search Results]\n${webSearchContext}` : ""),
     messages: await convertToModelMessages(messages),
     tools: {
       web_search: (tool as any)({

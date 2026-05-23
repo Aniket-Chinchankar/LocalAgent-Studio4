@@ -207,6 +207,7 @@ export const Route = createFileRoute("/api/chat")({
             messages: body.messages,
             lastUserText: lastText,
             ragContext,
+            webSearchContext: body.webSearchContext,
             ctx: { supabase, userId, conversationId: body.conversationId },
           });
           const streamResponse = result.toUIMessageStreamResponse({
