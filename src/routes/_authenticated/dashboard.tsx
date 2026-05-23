@@ -16,7 +16,7 @@ function Dashboard() {
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: any) => {
       const name =
         data.user?.user_metadata?.display_name || data.user?.email?.split("@")[0] || "there";
       setUserName(name);
@@ -121,7 +121,7 @@ function Dashboard() {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {convs.slice(0, 5).map((c) => (
+                {convs.slice(0, 5).map((c: any) => (
                   <Link
                     key={c.id}
                     to="/chat/$conversationId"

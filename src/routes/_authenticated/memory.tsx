@@ -155,9 +155,9 @@ function MemoryPage() {
             {searchMut.data && (
               <div className="mt-6 space-y-3">
                 {[
-                  ...searchMut.data.chunks.map((c, i) => ({ kind: "Doc", n: i + 1, ...c })),
-                  ...searchMut.data.memory.map((m, i) => ({ kind: "Mem", n: i + 1, ...m })),
-                ].map((r, idx) => (
+                  ...searchMut.data.chunks.map((c: any, i: number) => ({ kind: "Doc", n: i + 1, ...c })),
+                  ...searchMut.data.memory.map((m: any, i: number) => ({ kind: "Mem", n: i + 1, ...m })),
+                ].map((r: any, idx: number) => (
                   <div
                     key={idx}
                     className="rounded-xl border border-border bg-white/5 p-4 text-xs group transition hover:border-primary/30"
@@ -210,7 +210,7 @@ function MemoryPage() {
                 </div>
               ) : (
                 <ul className="divide-y divide-border">
-                  {docs.map((d) => (
+                  {docs.map((d: any) => (
                     <li
                       key={d.id}
                       className="group flex items-center gap-4 px-6 py-4 transition hover:bg-white/5"
@@ -270,7 +270,7 @@ function MemoryPage() {
                 </div>
               ) : (
                 <div className="max-h-[600px] overflow-y-auto divide-y divide-border">
-                  {memory.map((m) => (
+                  {memory.map((m: any) => (
                     <div key={m.id} className="group p-5 transition hover:bg-white/5">
                       <div className="flex justify-between gap-2">
                         <p className="text-sm leading-relaxed">{m.content}</p>

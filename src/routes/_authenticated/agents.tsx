@@ -95,7 +95,7 @@ function AgentsPage() {
               </div>
             ) : (
               <ul className="divide-y divide-border">
-                {runs.map((r) => (
+                {runs.map((r: any) => (
                   <li key={r.id} className="flex gap-4 px-6 py-5 transition hover:bg-white/5">
                     <div className="mt-1">
                       <StatusIcon status={r.status} />

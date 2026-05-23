@@ -81,7 +81,7 @@ function ChatPage() {
   });
 
   const initialMessages: UIMessage[] = useMemo(() => {
-    return (data?.messages ?? []).map((m) => ({
+    return (data?.messages ?? []).map((m: any) => ({
       id: m.id,
       role: m.role as "user" | "assistant" | "system",
       parts: [{ type: "text", text: m.content }],
@@ -99,9 +99,16 @@ function ChatPage() {
             bodyObj.model || userSettings.default_model || "puter/gemini-3.5-flash";
 
           // Defensive fallback: if the selected model is not a Puter model,
-          // but there is NO API key configured in userSettings or locally,
+          // but there is NO valid API key configured in userSettings or locally,
           // force it to use Puter's Gemini 3.5 Flash model instead of throwing an error!
-          if (!selectedModel.startsWith("puter/") && !userSettings.api_key) {
+          const hasApiKey =
+            userSettings.api_key &&
+            userSettings.api_key !== "mock-key" &&
+            userSettings.api_key !== "undefined" &&
+            userSettings.api_key !== "null" &&
+            userSettings.api_key.trim() !== "";
+
+          if (!selectedModel.startsWith("puter/") && !hasApiKey) {
             selectedModel = "puter/gemini-3.5-flash";
           }
           const isPuter = selectedModel.startsWith("puter/");
@@ -119,10 +126,22 @@ function ChatPage() {
                 content: m.content || m.parts?.map((p: any) => p.text).join("") || "",
               }));
 
-              const activeAgent = AGENTS[agent] || AGENTS.default;
-              let systemPrompt = activeAgent.systemPrompt || "";
+              let systemPrompt = "";
+              if (agent === "orchestrator") {
+                systemPrompt = 
+                  `You are the AgentFlow AI Collective. Since we are running in an optimized single-turn mode, you must act as all of our specialist agents sequentially to solve the user's request:\n\n` +
+                  `1. PLANNER: Analyze the request and map out a step-by-step execution plan.\n` +
+                  `2. RESEARCHER: Review the real-time search results (if provided below) and extract key facts.\n` +
+                  `3. CODER: Write high-quality, production-ready, well-commented code blocks if required.\n` +
+                  `4. REVIEWER: Double-check your logic and code, correct any flaws, and refine the final output.\n\n` +
+                  `Structure your response with clear, beautiful headings for each phase (e.g., [PLANNING], [RESEARCH], [IMPLEMENTATION], [REVIEW]) so the user can see the collective's collaborative flow in action.`;
+              } else {
+                const activeAgent = AGENTS[agent] || AGENTS.default;
+                systemPrompt = activeAgent.systemPrompt || "";
+              }
+
               if (bodyObj.webSearchContext) {
-                systemPrompt += bodyObj.webSearchContext;
+                systemPrompt += `\n\n${bodyObj.webSearchContext}`;
               }
 
               if (systemPrompt) {
@@ -276,7 +295,7 @@ function ChatPage() {
       }
     }
 
-    await sendMessage({ 
+    await (sendMessage as any)({ 
       text,
       body: {
         webSearchContext: searchContext,

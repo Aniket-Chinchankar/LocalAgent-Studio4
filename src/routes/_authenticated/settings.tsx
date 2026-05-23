@@ -26,7 +26,7 @@ function SettingsPage() {
       setEmail(user.email ?? "");
       const isGoogle =
         user.app_metadata?.provider === "google" ||
-        user.identities?.some((id) => id.provider === "google") ||
+        user.identities?.some((id: any) => id.provider === "google") ||
         (user.email ?? "").endsWith("@gmail.com") ||
         (user.email ?? "").endsWith("@paruluniversity.ac.in");
       setIsGoogleUser(isGoogle);

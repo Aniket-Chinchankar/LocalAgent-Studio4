@@ -77,16 +77,23 @@ export const Route = createFileRoute("/api/chat")({
 
         let LOVABLE_API_KEY = settings?.api_key || process.env.LOVABLE_API_KEY;
 
-        if (!LOVABLE_API_KEY && isGoogleUser) {
+        if ((!LOVABLE_API_KEY || LOVABLE_API_KEY === "mock-key" || LOVABLE_API_KEY === "undefined" || LOVABLE_API_KEY === "null" || LOVABLE_API_KEY.trim() === "") && isGoogleUser) {
           LOVABLE_API_KEY =
             process.env.GEMINI_API_KEY ||
             process.env.LOVABLE_API_KEY ||
             process.env.GOOGLE_GENERATIVE_AI_API_KEY;
         }
 
-        if (!LOVABLE_API_KEY) {
+        const hasValidKey =
+          LOVABLE_API_KEY &&
+          LOVABLE_API_KEY !== "mock-key" &&
+          LOVABLE_API_KEY !== "undefined" &&
+          LOVABLE_API_KEY !== "null" &&
+          LOVABLE_API_KEY.trim() !== "";
+
+        if (!hasValidKey) {
           return new Response(
-            "Missing API Key. Please add it in Settings or sign in with Google/Gmail.",
+            "Missing or invalid API Key. Please configure a valid Gemini API Key in Settings.",
             { status: 400 },
           );
         }

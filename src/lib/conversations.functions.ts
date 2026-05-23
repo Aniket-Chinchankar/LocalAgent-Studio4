@@ -96,8 +96,8 @@ export const getStats = createServerFn({ method: "GET" })
       context.supabase.from("semantic_memory").select("id", { count: "exact", head: true }),
     ]);
 
-    const totalIn = (tokens.data ?? []).reduce((s, t) => s + (t.tokens_in ?? 0), 0);
-    const totalOut = (tokens.data ?? []).reduce((s, t) => s + (t.tokens_out ?? 0), 0);
+    const totalIn = (tokens.data ?? []).reduce((s: number, t: any) => s + (t.tokens_in ?? 0), 0);
+    const totalOut = (tokens.data ?? []).reduce((s: number, t: any) => s + (t.tokens_out ?? 0), 0);
 
     return {
       conversations: convs.count ?? 0,

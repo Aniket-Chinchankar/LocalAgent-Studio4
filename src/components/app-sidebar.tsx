@@ -119,7 +119,7 @@ export function AppSidebar() {
               {convs.length === 0 && (
                 <p className="px-2 py-1 text-xs text-muted-foreground">No chats yet</p>
               )}
-              {convs.map((c) => (
+              {convs.map((c: any) => (
                 <SidebarMenuItem key={c.id}>
                   <SidebarMenuButton asChild isActive={pathname === `/chat/${c.id}`}>
                     <Link

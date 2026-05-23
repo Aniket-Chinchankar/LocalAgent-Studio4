@@ -111,20 +111,20 @@ export async function runOrchestrator(opts: {
       ragContext,
     messages: await convertToModelMessages(messages),
     tools: {
-      web_search: {
+      web_search: (tool as any)({
         description: "Search the web for real-time information.",
         parameters: z.object({ query: z.string() }),
         execute: async ({ query }: { query: string }) => {
           return await performWebSearch(query);
         },
-      },
-      web_scrape: {
+      }),
+      web_scrape: (tool as any)({
         description: "Fetch and extract clean text content from a specific web URL.",
         parameters: z.object({ url: z.string().url() }),
         execute: async ({ url }: { url: string }) => {
           return await scrapeWebPage(url);
         },
-      },
+      }),
     },
     onFinish: async ({ text, usage }) => {
       await logRun(
