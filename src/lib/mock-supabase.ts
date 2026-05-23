@@ -661,7 +661,7 @@ export function createMockSupabaseClient() {
                     data: {
                       user: {
                         id: "00000000-0000-0000-0000-000000000000",
-                        email: "guest@localagent.studio",
+                        email: "guest@agentflow.ai",
                         user_metadata: { display_name: "Guest" },
                         app_metadata: { provider: "email" },
                         identities: [],
@@ -713,7 +713,7 @@ export function createMockSupabaseClient() {
                   data: {
                     user: {
                       id: "00000000-0000-0000-0000-000000000000",
-                      email: "guest@localagent.studio",
+                      email: "guest@agentflow.ai",
                       user_metadata: { display_name: "Guest" },
                       app_metadata: { provider: "email" },
                       identities: [],
@@ -741,7 +741,7 @@ export function createMockSupabaseClient() {
                         token_type: "bearer",
                         user: {
                           id: "00000000-0000-0000-0000-000000000000",
-                          email: "guest@localagent.studio",
+                          email: "guest@agentflow.ai",
                           user_metadata: { display_name: "Guest" },
                           app_metadata: { provider: "email" },
                           identities: [],

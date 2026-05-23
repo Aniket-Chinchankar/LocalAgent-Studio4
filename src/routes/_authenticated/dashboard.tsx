@@ -60,7 +60,7 @@ function Dashboard() {
             Hi, <span className="text-gradient capitalize">{userName}</span>
           </h1>
           <p className="mt-2 max-w-lg text-muted-foreground">
-            LocalAgent Studio is ready. Your multi-agent collective has processed{" "}
+            AgentFlow AI is ready. Your multi-agent collective has processed{" "}
             {stats?.tokensOut.toLocaleString() ?? 0} tokens of insight today.
           </p>
           <div className="mt-6">

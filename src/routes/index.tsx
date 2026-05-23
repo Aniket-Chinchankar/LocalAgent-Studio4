@@ -52,7 +52,7 @@ function Landing() {
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow">
             <Sparkles className="h-4 w-4" />
           </div>
-          <span>LocalAgent Studio</span>
+          <span>AgentFlow AI</span>
         </div>
         <nav className="flex gap-3 text-sm">
           <Link
@@ -80,7 +80,7 @@ function Landing() {
           Your <span className="text-gradient">autonomous research</span> team, in one chat.
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-          LocalAgent Studio coordinates specialized AI agents (Claude 3.5, Gemini 3, GPT-4o) to plan, research,
+          AgentFlow AI coordinates specialized AI agents (Claude 3.5, Gemini 3, GPT-4o) to plan, research,
           code, and review — with semantic memory and citation-grade answers.
         </p>
         <div className="mt-10 flex justify-center gap-3">

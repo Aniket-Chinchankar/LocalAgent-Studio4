@@ -353,7 +353,7 @@ function ChatPage() {
               </div>
               <h2 className="text-2xl font-bold tracking-tight">How can I assist you?</h2>
               <p className="mt-3 max-w-md text-sm text-muted-foreground leading-relaxed">
-                LocalAgent Studio is ready. I can plan projects, research topics, write code, or review your
+                AgentFlow AI is ready. I can plan projects, research topics, write code, or review your
                 work using our specialist agent collective.
               </p>
               <div className="mt-8 grid grid-cols-2 gap-3 max-w-lg">
@@ -419,7 +419,7 @@ function ChatPage() {
                   submit();
                 }
               }}
-              placeholder="Message LocalAgent Studio..."
+              placeholder="Message AgentFlow AI..."
               rows={1}
               className="max-h-60 flex-1 resize-none bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground scrollbar-hide"
             />

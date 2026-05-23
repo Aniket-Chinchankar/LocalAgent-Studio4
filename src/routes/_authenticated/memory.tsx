@@ -265,7 +265,7 @@ function MemoryPage() {
               ) : memory.length === 0 ? (
                 <div className="px-4 py-12 text-center">
                   <p className="text-sm text-muted-foreground">
-                    Facts you discuss with LocalAgent Studio will appear here automatically.
+                    Facts you discuss with AgentFlow AI will appear here automatically.
                   </p>
                 </div>
               ) : (

@@ -26,7 +26,7 @@ function AuthenticatedLayout() {
         <div className="flex flex-1 flex-col">
           <header className="flex h-12 items-center gap-2 border-b border-border px-3 md:hidden">
             <SidebarTrigger />
-            <span className="text-sm font-medium">LocalAgent Studio</span>
+            <span className="text-sm font-medium">AgentFlow AI</span>
           </header>
           <main className="flex-1 overflow-hidden">
             <Outlet />

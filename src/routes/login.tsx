@@ -61,7 +61,7 @@ function LoginPage() {
         localStorage.setItem("sb-arxwmkssbnlwpzxcljiy-auth-token", JSON.stringify(sessionObj));
         window.dispatchEvent(new Event("storage"));
 
-        toast.success("Welcome to LocalAgent Studio! Registration successful.");
+        toast.success("Welcome to AgentFlow AI! Registration successful.");
         navigate({ to: "/dashboard" });
       } else {
         try {
@@ -145,7 +145,7 @@ function LoginPage() {
   const handleGuestLogin = async () => {
     setLoading(true);
     try {
-      const guestEmail = "guest@localagent.studio";
+      const guestEmail = "guest@agentflow.ai";
       const guestPassword = "GuestPassword123!";
 
       const { error } = await supabase.auth.signInWithPassword({
@@ -175,7 +175,7 @@ function LoginPage() {
               id: "00000000-0000-0000-0000-000000000000",
               aud: "authenticated",
               role: "authenticated",
-              email: "guest@localagent.studio",
+              email: "guest@agentflow.ai",
               email_confirmed_at: new Date().toISOString(),
               confirmed_at: new Date().toISOString(),
               last_sign_in_at: new Date().toISOString(),
@@ -211,7 +211,7 @@ function LoginPage() {
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow">
             <Sparkles className="h-4 w-4" />
           </div>
-          LocalAgent Studio
+          AgentFlow AI
         </Link>
         <div className="glass rounded-2xl p-8">
           <h1 className="text-2xl font-semibold">{isSignup ? "Create account" : "Welcome back"}</h1>

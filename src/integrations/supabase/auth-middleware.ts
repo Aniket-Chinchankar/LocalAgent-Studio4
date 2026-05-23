@@ -32,7 +32,7 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
 
     if (token === "mock-guest-token") {
       userId = "00000000-0000-0000-0000-000000000000";
-      email = "guest@localagent.studio";
+      email = "guest@agentflow.ai";
       displayName = "Guest";
     } else if (token.startsWith("local-token:")) {
       const parts = token.split(":");

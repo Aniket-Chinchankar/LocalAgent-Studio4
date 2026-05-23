@@ -79,7 +79,7 @@ export function AppSidebar() {
           <div className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow">
             <Sparkles className="h-3.5 w-3.5" />
           </div>
-          <span className="text-sm font-semibold">LocalAgent Studio</span>
+          <span className="text-sm font-semibold">AgentFlow AI</span>
         </div>
       </SidebarHeader>
       <SidebarContent>

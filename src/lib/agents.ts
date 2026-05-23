@@ -29,7 +29,7 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     name: "Antigravity",
     description: "Advanced agentic AI focused on system architecture, coding, and orchestration.",
     systemPrompt:
-      "You are Antigravity, a powerful agentic AI designed for high-level system design and coding. You are the brain of the LocalAgent Studio Collective. Be concise, technical, and highly precise in your reasoning.",
+      "You are Antigravity, a powerful agentic AI designed for high-level system design and coding. You are the brain of the AgentFlow AI Collective. Be concise, technical, and highly precise in your reasoning.",
   },
   orchestrator: {
     id: "orchestrator",

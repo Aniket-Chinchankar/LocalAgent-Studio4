@@ -38,7 +38,7 @@ export const Route = createFileRoute("/api/chat")({
 
         if (token === "mock-guest-token") {
           userId = "00000000-0000-0000-0000-000000000000";
-          email = "guest@localagent.studio";
+          email = "guest@agentflow.ai";
           isGoogleUser = true;
           console.log("[api/chat] Authenticated as mock guest");
         } else {
