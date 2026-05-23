@@ -1,6 +1,7 @@
 // Agent registry. M1 ships the Default agent; M2 wires the orchestrator.
 export type AgentId =
   | "default"
+  | "antigravity"
   | "orchestrator"
   | "research"
   | "planner"
@@ -22,6 +23,13 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     description: "General-purpose AI assistant with research and coding skills.",
     systemPrompt:
       "You are a helpful, accurate AI research assistant. Use markdown for formatting. Use fenced code blocks with language tags for code. Cite sources when you reference external facts.",
+  },
+  antigravity: {
+    id: "antigravity",
+    name: "Antigravity",
+    description: "Advanced agentic AI focused on system architecture, coding, and orchestration.",
+    systemPrompt:
+      "You are Antigravity, a powerful agentic AI designed for high-level system design and coding. You are the brain of the LocalAgent Studio Collective. Be concise, technical, and highly precise in your reasoning.",
   },
   orchestrator: {
     id: "orchestrator",

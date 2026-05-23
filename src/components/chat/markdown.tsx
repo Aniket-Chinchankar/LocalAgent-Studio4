@@ -25,7 +25,16 @@ export function Markdown({ content }: { content: string }) {
             return <CodeBlock language={match[1]} value={text} />;
           },
           a({ children, ...props }) {
-            return <a {...props} target="_blank" rel="noreferrer" className="text-primary underline-offset-2 hover:underline">{children}</a>;
+            return (
+              <a
+                {...props}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {children}
+              </a>
+            );
           },
         }}
       >
@@ -51,7 +60,16 @@ function CodeBlock({ language, value }: { language: string; value: string }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <SyntaxHighlighter language={language} style={oneDark} customStyle={{ margin: 0, background: "transparent", padding: "12px 14px", fontSize: "0.85em" }}>
+      <SyntaxHighlighter
+        language={language}
+        style={oneDark}
+        customStyle={{
+          margin: 0,
+          background: "transparent",
+          padding: "12px 14px",
+          fontSize: "0.85em",
+        }}
+      >
         {value}
       </SyntaxHighlighter>
     </div>

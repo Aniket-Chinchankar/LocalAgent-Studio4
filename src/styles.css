@@ -70,7 +70,11 @@
   --sidebar-ring: oklch(0.72 0.18 285);
 
   --gradient-primary: linear-gradient(135deg, oklch(0.72 0.18 285), oklch(0.65 0.2 200));
-  --gradient-surface: linear-gradient(180deg, oklch(0.21 0.035 270 / 0.9), oklch(0.18 0.03 270 / 0.6));
+  --gradient-surface: linear-gradient(
+    180deg,
+    oklch(0.21 0.035 270 / 0.9),
+    oklch(0.18 0.03 270 / 0.6)
+  );
   --shadow-glow: 0 0 40px -8px oklch(0.72 0.18 285 / 0.45);
 }
 
@@ -84,7 +88,9 @@
   * {
     border-color: var(--color-border);
   }
-  html, body, #root {
+  html,
+  body,
+  #root {
     height: 100%;
   }
   body {
@@ -99,9 +105,15 @@
 
 @layer utilities {
   .glass {
-    background: color-mix(in oklab, var(--card) 70%, transparent);
-    backdrop-filter: blur(14px);
+    background: color-mix(in oklab, var(--card) 60%, transparent);
+    backdrop-filter: blur(20px);
     border: 1px solid var(--border);
+    box-shadow: 0 4px 24px -1px oklch(0 0 0 / 10%);
+  }
+  .glass-card {
+    background: linear-gradient(135deg, oklch(1 0 0 / 5%), oklch(1 0 0 / 2%));
+    backdrop-filter: blur(12px);
+    border: 1px solid oklch(1 0 0 / 10%);
   }
   .text-gradient {
     background: var(--gradient-primary);
@@ -109,5 +121,18 @@
     background-clip: text;
     color: transparent;
   }
-  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  .animate-glow {
+    animation: glow 4s ease-in-out infinite alternate;
+  }
+  @keyframes glow {
+    from {
+      filter: drop-shadow(0 0 5px oklch(0.72 0.18 285 / 0.3));
+    }
+    to {
+      filter: drop-shadow(0 0 20px oklch(0.72 0.18 285 / 0.6));
+    }
+  }
 }

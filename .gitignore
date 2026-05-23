@@ -28,5 +28,8 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+
+# SQLite local database files
+local.db
+local.db-journal

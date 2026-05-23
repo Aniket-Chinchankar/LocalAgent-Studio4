@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import "@tanstack/react-start";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createLovableAiGatewayProvider, DEFAULT_MODEL } from "@/lib/ai-gateway";
+import { getAiProvider, mapModelName, DEFAULT_MODEL } from "@/lib/ai-gateway";
 import { AGENTS, type AgentId } from "@/lib/agents";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/integrations/supabase/client";
 
 type ChatBody = {
   messages?: UIMessage[];
   agent?: AgentId;
   conversationId?: string;
   model?: string;
+  webSearchContext?: string;
 };
 
 export const Route = createFileRoute("/api/chat")({
@@ -18,33 +19,81 @@ export const Route = createFileRoute("/api/chat")({
       POST: async ({ request }: { request: Request }) => {
         const auth = request.headers.get("authorization");
         if (!auth?.startsWith("Bearer ")) {
-          return new Response("Unauthorized", { status: 401 });
+          console.error("[api/chat] Unauthorized: missing or invalid authorization header:", auth);
+          return new Response("Unauthorized: Missing or invalid authorization header format", { status: 401 });
         }
         const token = auth.slice(7);
 
         const SUPABASE_URL = process.env.SUPABASE_URL!;
         const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY!;
-        const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-        if (!LOVABLE_API_KEY) {
-          return new Response("Missing LOVABLE_API_KEY", { status: 500 });
-        }
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
           global: { headers: { Authorization: `Bearer ${token}` } },
           auth: { persistSession: false, autoRefreshToken: false },
         });
-        const { data: claims } = await supabase.auth.getClaims(token);
-        const userId = claims?.claims?.sub;
-        if (!userId) return new Response("Unauthorized", { status: 401 });
+        let userId = "";
+        let email = "";
+        let isGoogleUser = false;
+        let claims: any = null;
+
+        if (token === "mock-guest-token") {
+          userId = "00000000-0000-0000-0000-000000000000";
+          email = "guest@localagent.studio";
+          isGoogleUser = true;
+          console.log("[api/chat] Authenticated as mock guest");
+        } else {
+          console.log("[api/chat] Fetching user claims for token prefix:", token.substring(0, 20));
+          const { data: userClaims, error: getUserErr } = await (supabase.auth as any).getUser(token);
+          if (getUserErr) {
+            console.error("[api/chat] getUser error:", getUserErr);
+          }
+          claims = userClaims;
+          userId = claims?.user?.id;
+          if (!userId) {
+            console.error("[api/chat] Unauthorized: userId is missing from claims. claims:", JSON.stringify(claims));
+            return new Response("Unauthorized: Invalid user session", { status: 401 });
+          }
+
+          console.log("[api/chat] Authenticated local user:", userId);
+          email = claims?.user?.email ?? "";
+          isGoogleUser =
+            claims?.user?.app_metadata?.provider === "google" ||
+            claims?.user?.identities?.some((id: any) => id.provider === "google") ||
+            email.endsWith("@gmail.com") ||
+            email.endsWith("@paruluniversity.ac.in");
+        }
 
         const body = (await request.json()) as ChatBody;
         if (!Array.isArray(body.messages)) {
           return new Response("messages required", { status: 400 });
         }
 
+        // Fetch user settings (API key and default model)
+        const { data: settings } = await supabase
+          .from("user_settings")
+          .select("api_key, default_model")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        let LOVABLE_API_KEY = settings?.api_key || process.env.LOVABLE_API_KEY;
+
+        if (!LOVABLE_API_KEY && isGoogleUser) {
+          LOVABLE_API_KEY =
+            process.env.GEMINI_API_KEY ||
+            process.env.LOVABLE_API_KEY ||
+            process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        }
+
+        if (!LOVABLE_API_KEY) {
+          return new Response(
+            "Missing API Key. Please add it in Settings or sign in with Google/Gmail.",
+            { status: 400 },
+          );
+        }
+
         const agentId: AgentId = (body.agent ?? "default") as AgentId;
         const agent = AGENTS[agentId] ?? AGENTS.default;
-        const model = body.model ?? DEFAULT_MODEL;
+        const model = body.model || settings?.default_model || DEFAULT_MODEL;
 
         const last = body.messages[body.messages.length - 1];
         const lastText =
@@ -83,8 +132,9 @@ export const Route = createFileRoute("/api/chat")({
             ]);
             const docParts = (chunks.data ?? [])
               .filter((c: { similarity: number }) => c.similarity > 0.35)
-              .map((c: { content: string; similarity: number }, i: number) =>
-                `[Doc#${i + 1} sim=${c.similarity.toFixed(2)}] ${c.content}`,
+              .map(
+                (c: { content: string; similarity: number }, i: number) =>
+                  `[Doc#${i + 1} sim=${c.similarity.toFixed(2)}] ${c.content}`,
               );
             const memParts = (memory.data ?? [])
               .filter((m: { similarity: number }) => m.similarity > 0.4)
@@ -100,7 +150,8 @@ export const Route = createFileRoute("/api/chat")({
           }
         }
 
-        const gateway = createLovableAiGatewayProvider(LOVABLE_API_KEY);
+        const gateway = getAiProvider(LOVABLE_API_KEY);
+        const mappedModel = mapModelName(model, LOVABLE_API_KEY);
 
         const onAssistantFinish = async (
           text: string,
@@ -164,8 +215,8 @@ export const Route = createFileRoute("/api/chat")({
         }
 
         const result = streamText({
-          model: gateway(model),
-          system: agent.systemPrompt + ragContext,
+          model: gateway(mappedModel),
+          system: agent.systemPrompt + ragContext + (body.webSearchContext ?? ""),
           messages: await convertToModelMessages(body.messages),
           onFinish: async ({ text, usage }) => {
             await onAssistantFinish(text, usage, agentId);
@@ -192,18 +243,21 @@ async function extractAndStoreMemory(opts: {
 }) {
   const { generateText, Output } = await import("ai");
   const { z } = await import("zod");
-  const { createLovableAiGatewayProvider, DEFAULT_MODEL } = await import("@/lib/ai-gateway");
+  const { getAiProvider, mapModelName, DEFAULT_MODEL } = await import("@/lib/ai-gateway");
   const { embedTexts } = await import("@/lib/embeddings.server");
 
-  const gateway = createLovableAiGatewayProvider(opts.apiKey);
+  const gateway = getAiProvider(opts.apiKey);
+  const mappedModel = mapModelName(DEFAULT_MODEL, opts.apiKey);
   const { output } = await generateText({
-    model: gateway(DEFAULT_MODEL),
+    model: gateway(mappedModel),
     output: Output.object({
       schema: z.object({
         facts: z
           .array(z.string().min(8).max(280))
           .max(5)
-          .describe("Durable facts about the user, their preferences, projects, or decisions worth remembering long-term. Skip trivia and chit-chat."),
+          .describe(
+            "Durable facts about the user, their preferences, projects, or decisions worth remembering long-term. Skip trivia and chit-chat.",
+          ),
       }),
     }),
     prompt:

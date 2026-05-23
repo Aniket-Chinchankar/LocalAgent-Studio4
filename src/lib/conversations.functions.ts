@@ -71,10 +71,7 @@ export const deleteConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("conversations")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("conversations").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -89,4 +86,72 @@ export const getTokenUsage = createServerFn({ method: "GET" })
       .limit(50);
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+export const getStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [convs, tokens, memory] = await Promise.all([
+      context.supabase.from("conversations").select("id", { count: "exact", head: true }),
+      context.supabase.from("token_usage").select("tokens_in, tokens_out"),
+      context.supabase.from("semantic_memory").select("id", { count: "exact", head: true }),
+    ]);
+
+    const totalIn = (tokens.data ?? []).reduce((s, t) => s + (t.tokens_in ?? 0), 0);
+    const totalOut = (tokens.data ?? []).reduce((s, t) => s + (t.tokens_out ?? 0), 0);
+
+    return {
+      conversations: convs.count ?? 0,
+      tokensIn: totalIn,
+      tokensOut: totalOut,
+      memory: memory.count ?? 0,
+    };
+  });
+
+export const saveLocalMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        conversationId: z.string().uuid(),
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+        agent: z.string().optional(),
+        tokensIn: z.number().optional(),
+        tokensOut: z.number().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("messages").insert({
+      conversation_id: data.conversationId,
+      user_id: context.userId,
+      role: data.role,
+      content: data.content,
+      agent: data.agent || null,
+    });
+    if (error) throw new Error(error.message);
+
+    if (data.tokensIn || data.tokensOut) {
+      await context.supabase.from("token_usage").insert({
+        user_id: context.userId,
+        model: "gemini-3.5-flash",
+        tokens_in: data.tokensIn ?? 0,
+        tokens_out: data.tokensOut ?? 0,
+      });
+    }
+
+    await context.supabase
+      .from("conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", data.conversationId);
+
+    return { ok: true };
+  });
+
+export const localWebSearch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ query: z.string() }).parse(input))
+  .handler(async ({ data }) => {
+    const { performWebSearch } = await import("@/lib/orchestrator");
+    return await performWebSearch(data.query);
   });

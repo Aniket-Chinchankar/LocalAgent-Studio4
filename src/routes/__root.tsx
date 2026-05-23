@@ -38,7 +38,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <h1 className="text-xl font-semibold">Something went wrong</h1>
         <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
         <button
-          onClick={() => { router.invalidate(); reset(); }}
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
           className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
         >
           Try again
@@ -53,8 +56,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Nebula — AI Multi-Agent Research Assistant" },
-      { name: "description", content: "Production-grade multi-agent AI research assistant with RAG, semantic memory, and streaming chat." },
+      { title: "LocalAgent Studio — AI Multi-Agent Research Assistant" },
+      {
+        name: "description",
+        content:
+          "Production-grade multi-agent AI research assistant with RAG, semantic memory, and streaming chat.",
+      },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -67,7 +74,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />
@@ -91,7 +100,9 @@ function AuthSync() {
   const router = useRouter();
   const qc = useQueryClient();
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
       router.invalidate();
       qc.invalidateQueries();
     });

@@ -1,15 +1,20 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { localSignUp, localSignIn } from "@/lib/mock-supabase";
 
 const search = z.object({ mode: z.enum(["signin", "signup"]).optional() });
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s) => search.parse(s),
+  beforeLoad: async () => {
+    if (typeof window === "undefined") return;
+    const { data } = await supabase.auth.getSession();
+    if (data.session) throw redirect({ to: "/dashboard" });
+  },
   component: LoginPage,
 });
 
@@ -27,18 +32,109 @@ function LoginPage() {
     setLoading(true);
     try {
       if (isSignup) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { display_name: name || email.split("@")[0] }, emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Welcome to Nebula!");
+        const res = await localSignUp({ data: { email, password, name } });
+        const token = res.session.access_token;
+        const parts = token.split(":");
+        const userId = parts[1];
+        const userEmail = parts[2];
+        const displayName = parts[3];
+
+        const sessionObj = {
+          access_token: token,
+          refresh_token: token,
+          expires_in: 3600 * 24 * 365,
+          expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 365,
+          token_type: "bearer",
+          user: {
+            id: userId,
+            aud: "authenticated",
+            role: "authenticated",
+            email: userEmail,
+            email_confirmed_at: new Date().toISOString(),
+            confirmed_at: new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+            user_metadata: { display_name: displayName },
+            app_metadata: { provider: "email" },
+            identities: [],
+          },
+        };
+        localStorage.setItem("sb-arxwmkssbnlwpzxcljiy-auth-token", JSON.stringify(sessionObj));
+        window.dispatchEvent(new Event("storage"));
+
+        toast.success("Welcome to LocalAgent Studio! Registration successful.");
+        navigate({ to: "/dashboard" });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        try {
+          const res = await localSignIn({ data: { email, password } });
+          const token = res.session.access_token;
+          const parts = token.split(":");
+          const userId = parts[1];
+          const userEmail = parts[2];
+          const displayName = parts[3];
+
+          const sessionObj = {
+            access_token: token,
+            refresh_token: token,
+            expires_in: 3600 * 24 * 365,
+            expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 365,
+            token_type: "bearer",
+            user: {
+              id: userId,
+              aud: "authenticated",
+              role: "authenticated",
+              email: userEmail,
+              email_confirmed_at: new Date().toISOString(),
+              confirmed_at: new Date().toISOString(),
+              last_sign_in_at: new Date().toISOString(),
+              user_metadata: { display_name: displayName },
+              app_metadata: { provider: "email" },
+              identities: [],
+            },
+          };
+          localStorage.setItem("sb-arxwmkssbnlwpzxcljiy-auth-token", JSON.stringify(sessionObj));
+          window.dispatchEvent(new Event("storage"));
+
+          toast.success("Logged in successfully!");
+          navigate({ to: "/dashboard" });
+        } catch (signInErr: any) {
+          if (signInErr.message?.includes("Invalid email or password")) {
+            // Auto-signup fallback for a seamless experience
+            const res = await localSignUp({ data: { email, password, name: email.split("@")[0] } });
+            const token = res.session.access_token;
+            const parts = token.split(":");
+            const userId = parts[1];
+            const userEmail = parts[2];
+            const displayName = parts[3];
+
+            const sessionObj = {
+              access_token: token,
+              refresh_token: token,
+              expires_in: 3600 * 24 * 365,
+              expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 365,
+              token_type: "bearer",
+              user: {
+                id: userId,
+                aud: "authenticated",
+                role: "authenticated",
+                email: userEmail,
+                email_confirmed_at: new Date().toISOString(),
+                confirmed_at: new Date().toISOString(),
+                last_sign_in_at: new Date().toISOString(),
+                user_metadata: { display_name: displayName },
+                app_metadata: { provider: "email" },
+                identities: [],
+              },
+            };
+            localStorage.setItem("sb-arxwmkssbnlwpzxcljiy-auth-token", JSON.stringify(sessionObj));
+            window.dispatchEvent(new Event("storage"));
+
+            toast.success("Welcome! Your local account has been created.");
+            navigate({ to: "/dashboard" });
+          } else {
+            throw signInErr;
+          }
+        }
       }
-      navigate({ to: "/dashboard" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");
     } finally {
@@ -46,15 +142,64 @@ function LoginPage() {
     }
   };
 
-  const handleGoogle = async () => {
+  const handleGuestLogin = async () => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-      if (result.error) throw new Error(String(result.error));
-      if (result.redirected) return;
+      const guestEmail = "guest@localagent.studio";
+      const guestPassword = "GuestPassword123!";
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: guestEmail,
+        password: guestPassword,
+      });
+
+      if (error) {
+        // Try creating the guest account first
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: guestEmail,
+          password: guestPassword,
+          options: {
+            data: { display_name: "Guest" },
+          },
+        });
+
+        if (signUpError) {
+          // Fallback to a local mock guest session in localStorage
+          const mockSession = {
+            access_token: "mock-guest-token",
+            refresh_token: "mock-guest-token",
+            expires_in: 3600 * 24 * 365,
+            expires_at: Math.floor(Date.now() / 1000) + 3600 * 24 * 365,
+            token_type: "bearer",
+            user: {
+              id: "00000000-0000-0000-0000-000000000000",
+              aud: "authenticated",
+              role: "authenticated",
+              email: "guest@localagent.studio",
+              email_confirmed_at: new Date().toISOString(),
+              confirmed_at: new Date().toISOString(),
+              last_sign_in_at: new Date().toISOString(),
+              user_metadata: { display_name: "Guest" },
+              app_metadata: { provider: "email" },
+              identities: [],
+            },
+          };
+          localStorage.setItem("sb-arxwmkssbnlwpzxcljiy-auth-token", JSON.stringify(mockSession));
+          window.dispatchEvent(new Event("storage"));
+        } else {
+          // Log in with the newly created guest account
+          await supabase.auth.signInWithPassword({
+            email: guestEmail,
+            password: guestPassword,
+          });
+        }
+      }
+
+      toast.success("Logged in as Guest!");
       navigate({ to: "/dashboard" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+      toast.error("Guest login failed");
+    } finally {
       setLoading(false);
     }
   };
@@ -66,7 +211,7 @@ function LoginPage() {
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow">
             <Sparkles className="h-4 w-4" />
           </div>
-          Nebula
+          LocalAgent Studio
         </Link>
         <div className="glass rounded-2xl p-8">
           <h1 className="text-2xl font-semibold">{isSignup ? "Create account" : "Welcome back"}</h1>
@@ -75,12 +220,22 @@ function LoginPage() {
           </p>
 
           <button
-            onClick={handleGoogle}
+            onClick={handleGuestLogin}
             disabled={loading}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card/60 py-2.5 text-sm font-medium transition hover:bg-card disabled:opacity-50"
           >
-            <GoogleIcon /> Continue with Google
+            <Sparkles className="h-4 w-4 text-primary" /> Continue as Guest (Instant Bypass)
           </button>
+
+          <div className="mt-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-2.5 text-left text-xs text-muted-foreground shadow-glow-sm">
+            <p className="flex items-center gap-1.5 font-semibold text-primary">
+              <Sparkles className="h-3.5 w-3.5" /> API Keys & Internet Access
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/80">
+              Create an account or sign in to configure your own API keys. Alternatively, continue
+              as Guest for instant bypass with internet search access.
+            </p>
+          </div>
 
           <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
@@ -96,17 +251,25 @@ function LoginPage() {
               />
             )}
             <input
-              type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
               className="w-full rounded-lg border border-input bg-background/40 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             <input
-              type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Password (min 8 chars)"
               className="w-full rounded-lg border border-input bg-background/40 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             <button
-              type="submit" disabled={loading}
+              type="submit"
+              disabled={loading}
               className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground shadow-glow transition hover:scale-[1.01] disabled:opacity-50"
             >
               {loading ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
@@ -122,13 +285,5 @@ function LoginPage() {
         </div>
       </div>
     </main>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
-      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.4-1.7 4-5.5 4-3.3 0-6-2.7-6-6.1S8.7 5.9 12 5.9c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.9 3.4 14.7 2.5 12 2.5 6.8 2.5 2.6 6.7 2.6 12S6.8 21.5 12 21.5c6.9 0 9.4-4.9 9.4-7.3 0-.5 0-.9-.1-1.3H12z"/>
-    </svg>
   );
 }

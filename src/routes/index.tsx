@@ -12,12 +12,36 @@ export const Route = createFileRoute("/")({
 });
 
 const features = [
-  { icon: Network, title: "Multi-Agent Orchestration", body: "Planner, Research, Coding, Reviewer, and Memory agents coordinate on every task." },
-  { icon: Brain, title: "Semantic Memory (RAG)", body: "pgvector-backed long-term memory with embedding caching and metadata filtering." },
-  { icon: Search, title: "Tool Calling", body: "Agents invoke web search, PDF parsing, and semantic retrieval autonomously." },
-  { icon: Code2, title: "Production Code Output", body: "Generate typed APIs, components, and tests with reviewer-grade quality checks." },
-  { icon: ShieldCheck, title: "Secure by Default", body: "JWT auth, RLS on every table, prompt-injection guards, rate limiting." },
-  { icon: Sparkles, title: "Streaming UI", body: "Token-level streaming, live agent activity, markdown + syntax-highlighted code." },
+  {
+    icon: Network,
+    title: "Multi-Agent Orchestration",
+    body: "Planner, Research, Coding, Reviewer, and Memory agents coordinate on every task.",
+  },
+  {
+    icon: Brain,
+    title: "Semantic Memory (RAG)",
+    body: "pgvector-backed long-term memory with embedding caching and metadata filtering.",
+  },
+  {
+    icon: Search,
+    title: "Tool Calling",
+    body: "Agents invoke web search, PDF parsing, and semantic retrieval autonomously.",
+  },
+  {
+    icon: Code2,
+    title: "Production Code Output",
+    body: "Generate typed APIs, components, and tests with reviewer-grade quality checks.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Secure by Default",
+    body: "JWT auth, RLS on every table, prompt-injection guards, and session isolation.",
+  },
+  {
+    icon: Sparkles,
+    title: "Token Saver Mode",
+    body: "Switch between high-power multi-agent orchestration and ultra-efficient direct chat.",
+  },
 ];
 
 function Landing() {
@@ -28,11 +52,22 @@ function Landing() {
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow">
             <Sparkles className="h-4 w-4" />
           </div>
-          <span>Nebula</span>
+          <span>LocalAgent Studio</span>
         </div>
         <nav className="flex gap-3 text-sm">
-          <Link to="/login" className="rounded-md px-3 py-1.5 text-muted-foreground hover:text-foreground">Sign in</Link>
-          <Link to="/login" search={{ mode: "signup" }} className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground shadow-glow">Get started</Link>
+          <Link
+            to="/login"
+            className="rounded-md px-3 py-1.5 text-muted-foreground hover:text-foreground"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/login"
+            search={{ mode: "signup" }}
+            className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground shadow-glow"
+          >
+            Get started
+          </Link>
         </nav>
       </header>
 
@@ -45,13 +80,21 @@ function Landing() {
           Your <span className="text-gradient">autonomous research</span> team, in one chat.
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-          Nebula coordinates specialized AI agents to plan, research, code, and review — with semantic memory and citation-grade answers.
+          LocalAgent Studio coordinates specialized AI agents (Claude 3.5, Gemini 3, GPT-4o) to plan, research,
+          code, and review — with semantic memory and citation-grade answers.
         </p>
         <div className="mt-10 flex justify-center gap-3">
-          <Link to="/login" search={{ mode: "signup" }} className="rounded-lg bg-primary px-5 py-3 font-medium text-primary-foreground shadow-glow transition hover:scale-[1.02]">
+          <Link
+            to="/login"
+            search={{ mode: "signup" }}
+            className="rounded-lg bg-primary px-5 py-3 font-medium text-primary-foreground shadow-glow transition hover:scale-[1.02]"
+          >
             Start free
           </Link>
-          <Link to="/login" className="rounded-lg border border-border bg-card/40 px-5 py-3 font-medium backdrop-blur transition hover:bg-card">
+          <Link
+            to="/login"
+            className="rounded-lg border border-border bg-card/40 px-5 py-3 font-medium backdrop-blur transition hover:bg-card"
+          >
             Sign in
           </Link>
         </div>

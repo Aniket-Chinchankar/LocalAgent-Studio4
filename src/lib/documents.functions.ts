@@ -11,7 +11,9 @@ const UploadSchema = z.object({
   base64: z.string().min(1),
 });
 
-async function decodeFile(input: z.infer<typeof UploadSchema>): Promise<{ text: string; size: number }> {
+async function decodeFile(
+  input: z.infer<typeof UploadSchema>,
+): Promise<{ text: string; size: number }> {
   const binary = Uint8Array.from(atob(input.base64), (c) => c.charCodeAt(0));
   const size = binary.byteLength;
   if (size > 8 * 1024 * 1024) throw new Error("File exceeds 8MB limit");
@@ -30,8 +32,29 @@ export const uploadDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => UploadSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+    const { data: settings } = await context.supabase
+      .from("user_settings")
+      .select("api_key")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    const email = context.claims?.email ?? "";
+    const isGoogleUser =
+      context.claims?.app_metadata?.provider === "google" ||
+      context.claims?.identities?.some((id: any) => id.provider === "google") ||
+      email.endsWith("@gmail.com") ||
+      email.endsWith("@paruluniversity.ac.in");
+
+    let LOVABLE_API_KEY = settings?.api_key || process.env.LOVABLE_API_KEY;
+    if (!LOVABLE_API_KEY && isGoogleUser) {
+      LOVABLE_API_KEY =
+        process.env.GEMINI_API_KEY ||
+        process.env.LOVABLE_API_KEY ||
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    }
+    if (!LOVABLE_API_KEY) {
+      LOVABLE_API_KEY = "mock-key";
+    }
 
     // Insert document row
     const { data: doc, error: insertErr } = await context.supabase
@@ -58,7 +81,7 @@ export const uploadDocument = createServerFn({ method: "POST" })
       const all: number[][] = [];
       for (let i = 0; i < chunks.length; i += 64) {
         const batch = chunks.slice(i, i + 64);
-        const vecs = await embedTexts(apiKey, batch);
+        const vecs = await embedTexts(LOVABLE_API_KEY, batch);
         all.push(...vecs);
       }
 
@@ -71,9 +94,7 @@ export const uploadDocument = createServerFn({ method: "POST" })
       }));
 
       // Insert chunks
-      const { error: chunkErr } = await context.supabase
-        .from("document_chunks")
-        .insert(rows);
+      const { error: chunkErr } = await context.supabase.from("document_chunks").insert(rows);
       if (chunkErr) throw new Error(chunkErr.message);
 
       await context.supabase
@@ -109,10 +130,7 @@ export const deleteDocument = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await context.supabase.from("document_chunks").delete().eq("document_id", data.id);
-    const { error } = await context.supabase
-      .from("uploaded_documents")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("uploaded_documents").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -121,9 +139,31 @@ export const searchMemoryAndDocs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ query: z.string().min(1).max(500) }).parse(input))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
-    const vec = await embedOne(apiKey, data.query);
+    const { data: settings } = await context.supabase
+      .from("user_settings")
+      .select("api_key")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    const email = context.claims?.email ?? "";
+    const isGoogleUser =
+      context.claims?.app_metadata?.provider === "google" ||
+      context.claims?.identities?.some((id: any) => id.provider === "google") ||
+      email.endsWith("@gmail.com") ||
+      email.endsWith("@paruluniversity.ac.in");
+
+    let LOVABLE_API_KEY = settings?.api_key || process.env.LOVABLE_API_KEY;
+    if (!LOVABLE_API_KEY && isGoogleUser) {
+      LOVABLE_API_KEY =
+        process.env.GEMINI_API_KEY ||
+        process.env.LOVABLE_API_KEY ||
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    }
+    if (!LOVABLE_API_KEY) {
+      LOVABLE_API_KEY = "mock-key";
+    }
+
+    const vec = await embedOne(LOVABLE_API_KEY, data.query);
     const [chunks, memory] = await Promise.all([
       context.supabase.rpc("match_chunks", {
         query_embedding: vec as unknown as string,
@@ -158,10 +198,7 @@ export const deleteMemory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("semantic_memory")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("semantic_memory").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

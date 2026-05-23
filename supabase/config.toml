@@ -1,1 +1,8 @@
-project_id = "vcuwztkkrkexuyhedodt"
+project_id = "arxwmkssbnlwpzxcljiy"
+
+[auth.external.google]
+enabled = true
+client_id = "REPLACE_ME"
+secret = "REPLACE_ME"
+redirect_uri = "https://arxwmkssbnlwpzxcljiy.supabase.co/auth/v1/callback"
+skip_nonce_check = true
